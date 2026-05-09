@@ -282,6 +282,6 @@ ros2 launch jie_octomap odin1_loc.launch.py
 
 Robot Operating System ROS2: Introduction and Practice
 
-![Robot Operating System ROS2: Introduction and Practice](./media/book_1.jpg)
+<img src="./media/book_1.jpg" alt="Robot Operating System ROS2: Introduction and Practice" width="280">
 
 Taobao link: [Robot Operating System ROS2: Introduction and Practice](https://world.taobao.com/item/820988259242.htm)
