@@ -54,7 +54,7 @@ Note: the full AgiBot D1 navigation entry `octo_planner/launch/nav.launch.py` st
 Use the helper script:
 
 ```bash
-cd /home/robot/ros2_ws/src/jie_3d_nav
+cd ~/ros2_ws/src/jie_3d_nav
 bash install_deps_humble.sh
 ```
 
@@ -65,7 +65,7 @@ If CMake cannot find Open3D, install the Open3D C++ development files and make s
 Build from the ROS 2 workspace root:
 
 ```bash
-cd /home/robot/ros2_ws
+cd ~/ros2_ws
 source /opt/ros/humble/setup.bash
 colcon build --packages-select jie_map_msgs jie_octomap octo_planner
 source install/setup.bash
@@ -176,7 +176,7 @@ This launch starts:
 ### Load a Map and Start the Web Page
 
 ```bash
-ros2 launch jie_octomap web_octomap.launch.py map_package:=/home/robot/maps/map
+ros2 launch jie_octomap web_octomap.launch.py map_package:=~/maps/map
 ```
 
 Common parameters:

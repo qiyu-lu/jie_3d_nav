@@ -54,7 +54,7 @@ jie_3d_nav/
 可以使用仓库内脚本安装常用依赖：
 
 ```bash
-cd /home/robot/ros2_ws/src/jie_3d_nav
+cd ~/ros2_ws/src/jie_3d_nav
 bash install_deps_humble.sh
 ```
 
@@ -65,7 +65,7 @@ bash install_deps_humble.sh
 从 ROS 2 工作区根目录编译：
 
 ```bash
-cd /home/robot/ros2_ws
+cd ~/ros2_ws
 source /opt/ros/humble/setup.bash
 colcon build --packages-select jie_map_msgs jie_octomap octo_planner
 source install/setup.bash
@@ -176,7 +176,7 @@ ros2 launch jie_octomap map_manager.launch.py
 ### 加载地图并启动 Web 页面
 
 ```bash
-ros2 launch jie_octomap web_octomap.launch.py map_package:=/home/robot/maps/map
+ros2 launch jie_octomap web_octomap.launch.py map_package:=~/maps/map
 ```
 
 常用参数：
