@@ -20,6 +20,11 @@ This directory contains three ROS 2 packages:
 - View OctoMap in a Web page, select start/goal points, and run path planning.
 - Provide a navigation entry for the AgiBot D1 robot equipped with the LiuxingTech Odin 1 module, plus a standalone Web test entry.
 
+## Introduction Video
+
+- Bilibili: [Open Source ROS 2 Based 3D Navigation System](https://www.bilibili.com/video/BV1jgR9BmELw)
+- YouTube: [Open Source ROS 2 Based 3D Navigation System](https://www.youtube.com/watch?v=CepO90mzIeI)
+
 ## Directory Layout
 
 ```text
@@ -272,11 +277,6 @@ ros2 launch jie_octomap odin1_loc.launch.py
 ```
 
 `odin1_slam.launch.py` and `odin1_loc.launch.py` are for LiuxingTech Odin 1 workflows. They require `odin_ros_driver` at runtime and can optionally use `odin_costmap` configuration.
-
-## Introduction Video
-
-- Bilibili: [Open Source 3D Navigation System](https://www.bilibili.com/video/BV1oz421v7tB)
-- YouTube: [Open Source 3D Navigation System](https://www.youtube.com/watch?v=j0foOvBqQTc)
 
 ## Recommended Starter Book
 

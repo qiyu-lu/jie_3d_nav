@@ -20,6 +20,11 @@
 - 使用 Web 页面查看 OctoMap、选择起点/终点并进行路径规划。
 - 提供面向安装了留形科技 Odin 1 的 智元 D1 机器狗的导航入口和独立网页测试入口。
 
+## 介绍视频
+
+- Bilibili：[【开源】基于ROS2的3D导航系统](https://www.bilibili.com/video/BV1jgR9BmELw)
+- YouTube：[【开源】基于ROS2的3D导航系统](https://www.youtube.com/watch?v=CepO90mzIeI)
+
 ## 目录结构
 
 ```text
@@ -272,12 +277,6 @@ ros2 launch jie_octomap odin1_loc.launch.py
 ```
 
 其中 `odin1_slam.launch.py` 和 `odin1_loc.launch.py` 面向留形科技 Odin 1 空间定位模组流程，运行时需要 `odin_ros_driver`，并可选使用 `odin_costmap` 配置。
-
-
-## 介绍视频
-
-- Bilibili：[【开源】三维导航系统](https://www.bilibili.com/video/BV1oz421v7tB)
-- YouTube：[【开源】三维导航系统](https://www.youtube.com/watch?v=j0foOvBqQTc)
 
 ## 入门教材推荐
 
