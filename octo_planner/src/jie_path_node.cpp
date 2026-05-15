@@ -272,6 +272,7 @@ private:
     }
     map_ready_ = true;
     last_octomap_hash_ = map_hash;
+    clearNavigationStateAndPublish(msg->header.frame_id);
     rebuildPreblockedCells();
     rebuildDerivedLayers();
     rebuildPreblockedCostmap();
@@ -411,6 +412,33 @@ private:
     } else {
       last_success_seq_ = plan_seq_;
     }
+  }
+
+  void clearNavigationStateAndPublish(const std::string & frame_id)
+  {
+    has_start_ = false;
+    has_goal_ = false;
+    has_goal_pose_ = false;
+    planning_in_progress_ = false;
+    ++plan_seq_;
+
+    const auto stamp = now();
+    const std::string resolved_frame =
+      frame_id.empty() ? get_parameter("frame_id").as_string() : frame_id;
+
+    nav_msgs::msg::Path empty_path;
+    empty_path.header.stamp = stamp;
+    empty_path.header.frame_id = resolved_frame;
+    path_pub_->publish(empty_path);
+
+    visualization_msgs::msg::Marker delete_path;
+    delete_path.header = empty_path.header;
+    delete_path.ns = "jie_path";
+    delete_path.id = 0;
+    delete_path.action = visualization_msgs::msg::Marker::DELETE;
+    path_marker_pub_->publish(delete_path);
+
+    RCLCPP_INFO(get_logger(), "Cleared start, goal, and previous path after OctoMap update.");
   }
 
   GridIndex worldToGrid(double x, double y, double z) const

@@ -273,6 +273,10 @@ class WorldSelectorRosNode(Node):
         self._path_dirty = False
         return list(self._latest_path_points)
 
+    def clear_navigation_cache(self) -> None:
+        self._latest_path_points = []
+        self._path_dirty = False
+
     def _infer_voxel_scale(self) -> np.ndarray:
         for payload in (self._latest_occupied, self._latest_preblocked, self._latest_traversable):
             if payload is not None:
@@ -471,6 +475,18 @@ class WorldSelectorWindow(QWidget):
         if selected:
             self.save_root_edit.setText(selected)
 
+    def _clear_navigation_overlays(self) -> None:
+        for attr in ("_start_actor", "_goal_actor", "_goal_arrow_actor", "_path_actor"):
+            actor = getattr(self, attr)
+            if actor is not None:
+                self._renderer.RemoveActor(actor)
+                setattr(self, attr, None)
+        self._pick_mode = None
+        self._goal_pending_position = None
+        self._goal_yaw = 0.0
+        self._ros_node.clear_navigation_cache()
+        self.vtk_widget.GetRenderWindow().Render()
+
     def _load_world(self) -> None:
         world_file = self.path_edit.text().strip()
         if not world_file:
@@ -481,6 +497,7 @@ class WorldSelectorWindow(QWidget):
             QMessageBox.warning(self, "World 文件", f"文件不存在：{path}")
             return
 
+        self._clear_navigation_overlays()
         self._layer_data.clear()
         self._camera_initialized = False
         self._refresh_layers()
