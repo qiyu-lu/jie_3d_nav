@@ -4,6 +4,10 @@
 
 A ROS 2 Humble based 3D navigation system with a Web interface. This system has been tested on the AgiBot D1 quadruped robot and the LiuxingTech Odin 1 spatial localization module.
 
+<p align="center">
+  <img src="./media/1.png" alt="Overview" width="800">
+</p>
+
 This directory contains three ROS 2 packages:
 
 - `jie_map_msgs`: custom service interfaces for saving, loading, and exporting navigation map packages.
@@ -81,6 +85,26 @@ If the source directory has been moved, old CMake cache may still point to an ol
 ```bash
 colcon build --packages-select jie_map_msgs jie_octomap octo_planner --cmake-clean-cache
 ```
+
+## Quick Start
+
+Run the following command to load an example map:
+
+```bash
+ros2 launch jie_octomap import_gazebo_world.launch.py world_name:=2_storey.world
+```
+
+In the popup window, load the Gazebo world file, set the map crop side length, and click the load button to convert the world file into an OctoMap and display it in the window.
+
+<p align="center">
+  <img src="./media/2.png" alt="Load map" width="600">
+</p>
+
+Click the "Start" button first, then click on the map to set the start position. Click the "Goal" button, then click on the map to set the goal position. A feasible path will be planned.
+
+<p align="center">
+  <img src="./media/3.png" alt="Planned path" width="600">
+</p>
 
 ## Map Import
 
@@ -282,6 +306,8 @@ ros2 launch jie_octomap odin1_loc.launch.py
 
 Robot Operating System ROS2: Introduction and Practice
 
-<img src="./media/book_1.jpg" alt="Robot Operating System ROS2: Introduction and Practice" width="280">
+<p align="center">
+  <img src="./media/book_1.jpg" alt="Robot Operating System ROS2: Introduction and Practice" width="400">
+</p>
 
 Taobao link: [Robot Operating System ROS2: Introduction and Practice](https://world.taobao.com/item/820988259242.htm)

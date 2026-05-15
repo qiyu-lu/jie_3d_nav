@@ -4,6 +4,10 @@
 
 一套基于 ROS 2 Humble 的 3D 导航系统，通过 Web 界面交互。本系统已在智元科技 D1 机器狗以及留形科技 Odin 1 空间定位模组上测试通过。
 
+<p align="center">
+  <img src="./media/1.png" alt="概略图" width="800">
+</p>
+
 本目录包含三个 ROS 2 包：
 
 - `jie_map_msgs`：地图包保存、加载、导出等自定义服务接口。
@@ -81,6 +85,26 @@ source install/setup.bash
 ```bash
 colcon build --packages-select jie_map_msgs jie_octomap octo_planner --cmake-clean-cache
 ```
+
+## 快速体验
+
+运行如下指令加载例子地图：
+
+```bash
+ros2 launch jie_octomap import_gazebo_world.launch.py world_name:=2_storey.world
+```
+
+在弹出的窗口中，加载gazebo的world文件，设置地图的截取边长，点击加载按钮即可将world文件转换成OctoMap，并显示在窗口中。
+
+<p align="center">
+  <img src="./media/2.png" alt="加载地图" width="600">
+</p>
+
+先点击“起始点”按钮，用鼠标在地图上设置起始点位置。再点击“目标点”按钮，用鼠标在地图上设置目标点位置，即可规划出可行的路径。
+
+<p align="center">
+  <img src="./media/3.png" alt="规划路径" width="600">
+</p>
 
 ## 地图导入
 
@@ -282,6 +306,8 @@ ros2 launch jie_octomap odin1_loc.launch.py
 
 《机器人操作系统（ROS2）入门与实践》
 
-<img src="./media/book_1.jpg" alt="机器人操作系统 ROS2 入门与实践" width="280">
+<p align="center">
+  <img src="./media/book_1.jpg" alt="机器人操作系统 ROS2 入门与实践" width="400">
+</p>
 
 淘宝链接：[《机器人操作系统（ROS2）入门与实践》](https://world.taobao.com/item/820988259242.htm)
