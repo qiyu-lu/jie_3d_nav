@@ -78,6 +78,7 @@ public:
   {
     declare_parameter<std::string>("world_file", "");
     declare_parameter<double>("resolution", 0.2);
+    declare_parameter<double>("xy_window_size_m", 24.0);
     declare_parameter<double>("ground_surface_max_thickness_m", 0.6);
     declare_parameter<bool>("enable_stair_step_surface_mode", true);
     declare_parameter<double>("stair_step_max_height_m", 0.5);
@@ -89,6 +90,7 @@ public:
     declare_parameter<std::string>("world_file_cmd_topic", "/world_file_cmd");
 
     const auto world_file = get_parameter("world_file").as_string();
+    half_xy_extent_m_ = 0.5 * get_parameter("xy_window_size_m").as_double();
     ground_surface_max_thickness_m_ = get_parameter("ground_surface_max_thickness_m").as_double();
     enable_stair_step_surface_mode_ = get_parameter("enable_stair_step_surface_mode").as_bool();
     stair_step_max_height_m_ = get_parameter("stair_step_max_height_m").as_double();
@@ -128,6 +130,7 @@ private:
   void loadWorld(const std::string & world_file)
   {
     const double resolution = get_parameter("resolution").as_double();
+    half_xy_extent_m_ = 0.5 * get_parameter("xy_window_size_m").as_double();
     try {
       generateFromWorld(world_file, resolution);
       loaded_world_file_ = world_file;
@@ -204,6 +207,11 @@ private:
 
   void markPoint(const Eigen::Vector3d & p)
   {
+    if (half_xy_extent_m_ > 0.0 &&
+      (std::abs(p.x()) > half_xy_extent_m_ || std::abs(p.y()) > half_xy_extent_m_))
+    {
+      return;
+    }
     octomap::OcTreeKey key;
     const octomap::point3d q(
       static_cast<float>(p.x()), static_cast<float>(p.y()), static_cast<float>(p.z()));
@@ -391,6 +399,7 @@ private:
 
   std::shared_ptr<octomap::OcTree> tree_;
   std::string loaded_world_file_;
+  double half_xy_extent_m_{12.0};
   double ground_surface_max_thickness_m_{0.6};
   bool enable_stair_step_surface_mode_{true};
   double stair_step_max_height_m_{0.5};

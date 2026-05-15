@@ -14,6 +14,7 @@ from PyQt5.QtCore import QObject, Qt, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (
     QApplication,
     QCheckBox,
+    QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
     QGroupBox,
@@ -25,6 +26,8 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
+from rcl_interfaces.srv import SetParameters
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
@@ -91,6 +94,7 @@ class WorldSelectorRosNode(Node):
         super().__init__(f"world_selector_gui_node_{time.time_ns()}")
         self.declare_parameter("initial_world_file", "")
         self.declare_parameter("world_file_cmd_topic", "/world_file_cmd")
+        self.declare_parameter("world_to_octomap_node", "/world_to_octomap")
         self.declare_parameter("occupied_marker_topic", "/octomap_occupied_markers")
         self.declare_parameter("preblocked_topic", "/preblocked_cells_markers")
         self.declare_parameter("traversable_topic", "/traversable_cells_markers")
@@ -109,6 +113,10 @@ class WorldSelectorRosNode(Node):
 
         self.world_file_pub = self.create_publisher(
             String, self.get_parameter("world_file_cmd_topic").value, qos
+        )
+        self.world_param_client = self.create_client(
+            SetParameters,
+            f"{self.get_parameter('world_to_octomap_node').value}/set_parameters",
         )
         self.start_pub = self.create_publisher(
             PointStamped, self.get_parameter("start_topic").value, qos
@@ -150,6 +158,33 @@ class WorldSelectorRosNode(Node):
         msg = String()
         msg.data = world_file
         self.world_file_pub.publish(msg)
+
+    def set_world_xy_window_size(self, size_m: float, timeout_sec: float = 2.0) -> tuple[bool, str]:
+        if not self.world_param_client.wait_for_service(timeout_sec=timeout_sec):
+            return False, "参数服务 /world_to_octomap/set_parameters 不可用。"
+
+        request = SetParameters.Request()
+        param = Parameter()
+        param.name = "xy_window_size_m"
+        param.value = ParameterValue(
+            type=ParameterType.PARAMETER_DOUBLE,
+            double_value=float(size_m),
+        )
+        request.parameters = [param]
+        future = self.world_param_client.call_async(request)
+        deadline = time.monotonic() + timeout_sec
+        while rclpy.ok() and not future.done() and time.monotonic() < deadline:
+            rclpy.spin_once(self, timeout_sec=0.02)
+        if not future.done():
+            return False, "设置 OctoMap XY 范围超时。"
+        response = future.result()
+        if response is None or not response.results:
+            return False, "设置 OctoMap XY 范围失败。"
+        result = response.results[0]
+        if not result.successful:
+            reason = result.reason or "未知原因"
+            return False, f"设置 OctoMap XY 范围失败：{reason}"
+        return True, "OctoMap XY 范围已更新。"
 
     def publish_point(self, topic: str, frame_id: str, xyz: tuple[float, float, float]) -> None:
         msg = PointStamped()
@@ -294,6 +329,15 @@ class WorldSelectorWindow(QWidget):
         world_row.addWidget(self.path_edit, 1)
         world_row.addWidget(browse_btn)
         world_form.addRow("文件路径", world_row)
+
+        self.xy_window_spin = QDoubleSpinBox()
+        self.xy_window_spin.setRange(0.0, 1000.0)
+        self.xy_window_spin.setDecimals(1)
+        self.xy_window_spin.setSingleStep(1.0)
+        self.xy_window_spin.setSuffix(" m")
+        self.xy_window_spin.setSpecialValueText("不裁剪")
+        self.xy_window_spin.setValue(24.0)
+        world_form.addRow("XY范围", self.xy_window_spin)
 
         load_btn = QPushButton("加载World")
         load_btn.clicked.connect(self._load_world)
@@ -440,9 +484,16 @@ class WorldSelectorWindow(QWidget):
         self._layer_data.clear()
         self._camera_initialized = False
         self._refresh_layers()
+        xy_window_size = float(self.xy_window_spin.value())
+        ok, message = self._ros_node.set_world_xy_window_size(xy_window_size)
+        if not ok:
+            QMessageBox.warning(self, "World 文件", message)
+            return
         self._ros_node.publish_world_file(str(path))
+        range_text = "不裁剪" if xy_window_size <= 0.0 else f"{xy_window_size:.1f}m"
         self.status_label.setText(
-            f"已发送 world 文件：{path.name}。后端正在转换为 3D OctoMap，请稍候。"
+            f"已发送 world 文件：{path.name}，XY范围：{range_text}。"
+            " 后端正在转换为 3D OctoMap，请稍候。"
         )
 
     def _build_package_path(self) -> Path | None:
