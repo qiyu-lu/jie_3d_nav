@@ -21,7 +21,6 @@ def generate_launch_description():
             {
                 "frame_id": "map",
                 "world_file": "/home/robot/lv2.world",
-                "xy_window_size_m": 11.0,
                 "ground_surface_max_thickness_m": 0.6,
                 "enable_stair_step_surface_mode": True,
                 "stair_step_max_height_m": 0.5,
