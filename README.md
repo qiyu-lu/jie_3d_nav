@@ -148,6 +148,20 @@ ros2 launch jie_octomap import_pcd_map.launch.py
 - `pcd_map_import_gui`
 - `octo_planner/jie_path_node`
 
+`pcd_map_import_gui` 支持读取 PCD 后在左侧预览点云，并在转换前做常用清理：
+
+- `推荐转换参数`：根据当前点云的点间距、点数和地图范围，自动填入 OctoMap 分辨率、每体素最少点数和最小连通体素数。
+- `预处理降采样(m)`：读取 PCD 时对 GUI 工作点云进行体素降采样。修改该值后需要重新选择/读取 PCD 才会应用到当前点云。
+- `启用选区方块`：显示可移动选区方块，`W/S`、`A/D`、`Q/E` 分别沿 X/Y/Z 移动。
+- `抹除框内点云`：删除选区方块内的点。
+- `仅保留框内点云`：保留选区方块内的点，移除外部点，适合从大范围点云中裁剪出待转换区域。
+
+稀疏或大范围 PCD 建议先点击 `推荐转换参数`，再转换为 OctoMap。转换后重点观察终端日志中的 `kept_voxels`、`occupied_voxels`：
+
+- `kept_voxels` 只有几十或几百，通常表示分辨率过细或 `每体素最少点数` 过高。
+- `kept_voxels` 特别大，通常表示分辨率过细或裁剪范围过大，Web/Qt 显示和规划会变慢。
+- 稀疏点云的起步配置通常使用 `每体素最少点数=1`、`最小连通体素数=1`。
+
 转换成功时，终端应看到类似日志：
 
 ```text
@@ -155,6 +169,8 @@ Loaded PCD file: ... source_points=... kept_voxels=... occupied_voxels=...
 Preprocess mask rebuilt...
 Preblocked costmap rebuilt...
 ```
+
+保存地图包时，GUI 默认根目录为当前用户的 `~/maps`。如果手动选择保存目录，确保该目录属于当前用户并可写，不要使用只适用于作者机器人环境的 `/home/robot/maps`。
 
 如果 GUI 右侧没有显示转换后的 OctoMap，或保存地图包时提示 `not ready` / `octomap not ready`，优先检查终端中 `pcd_to_octomap_node` 是否已经退出。常见原因是 Open3D 依赖的运行库没有被动态链接器找到，例如：
 
@@ -173,6 +189,16 @@ ldd install/jie_octomap/lib/jie_octomap/pcd_to_octomap_node | grep -E "not found
 ```bash
 export LD_LIBRARY_PATH=/path/to/open3d_install/lib:${LD_LIBRARY_PATH}
 ros2 launch jie_octomap import_pcd_map.launch.py
+```
+
+也可以在命令行直接覆盖转换节点的默认参数：
+
+```bash
+ros2 launch jie_octomap import_pcd_map.launch.py \
+  resolution:=0.5 \
+  voxel_downsample_m:=0.0 \
+  min_points_per_voxel:=1 \
+  min_cluster_voxels:=1
 ```
 
 ### 导入 ROS 2D 栅格地图
@@ -268,11 +294,36 @@ ros2 launch jie_octomap web_octomap.launch.py map_package:=~/maps/map
 - `launch_rosbridge`：是否启动 `rosbridge_websocket`。
 - `launch_map_gui`：是否同时启动 Qt 保存/加载窗口。
 
+如果 `8080` 已被占用，会出现 `OSError: [Errno 98] Address already in use`。这不是实机或机器人 IP 问题，换一个端口即可：
+
+```bash
+ros2 launch jie_octomap web_octomap.launch.py \
+  map_package:=~/maps/map \
+  http_port:=8081
+```
+
+如果需要网页与 ROS 通信，启动 `rosbridge_websocket`：
+
+```bash
+ros2 launch jie_octomap web_octomap.launch.py \
+  map_package:=~/maps/map \
+  http_port:=8081 \
+  launch_rosbridge:=true
+```
+
+如果系统未安装 rosbridge：
+
+```bash
+sudo apt install ros-${ROS_DISTRO}-rosbridge-server
+```
+
 浏览器访问：
 
 ```text
-http://<机器人IP>:8080
+http://localhost:8081
 ```
+
+如果从另一台设备访问，使用运行该 launch 的电脑 IP，例如 `http://<电脑IP>:8081`。只有 Web 服务运行在机器人上时才使用机器人 IP。
 
 ### Web 功能测试
 
