@@ -36,7 +36,7 @@ jie_3d_nav/
 ├── jie_map_msgs/        # 自定义 srv 接口
 ├── jie_octomap/         # OctoMap 导入、管理、编辑、Web/GUI 工具
 ├── octo_planner/        # 3D 路径规划、控制器、导航 launch
-├── worlds/              # 示例 Gazebo world
+├── jie_octomap/worlds/  # 示例 Gazebo world
 └── install_deps_humble.sh
 ```
 
@@ -50,6 +50,19 @@ jie_3d_nav/
 - Open3D C++ 开发库
 - PyQt5、VTK、NumPy、Pillow、PyYAML
 - 可选：`rosbridge_server`，用于 Web 页面通过 websocket 访问 ROS
+
+### ROS 2 Foxy 复现说明
+
+本项目主要面向 Ubuntu 22.04 / ROS 2 Humble。Ubuntu 20.04 / ROS 2 Foxy 可用于验证核心链路（Gazebo world 或 PCD 地图导入为 OctoMap，再进行 3D 路径规划），但需要额外注意：
+
+- 安装 Foxy 的 Python 点云工具包：`sudo apt-get install ros-foxy-sensor-msgs-py`。
+- Ubuntu 20.04 默认提供 `python3-vtk7`，其 Qt 入口是 `vtk.qt.QVTKRenderWindowInteractor`；较新的 VTK 使用 `vtkmodules.qt.QVTKRenderWindowInteractor`。
+- 如果 Open3D C++ 安装在系统路径之外，编译时需要通过 `Open3D_DIR` 或 `CMAKE_PREFIX_PATH` 指向 `Open3DConfig.cmake`。
+- 如果运行 `pcd_to_octomap_node` 时出现 `libtbb.so.12: cannot open shared object file`，需要把 Open3D 安装目录下的 `lib/` 加入运行库路径，例如：
+
+```bash
+export LD_LIBRARY_PATH=/path/to/open3d_install/lib:${LD_LIBRARY_PATH}
+```
 
 基础编译不需要以下两个包：
 
@@ -71,7 +84,7 @@ bash install_deps_humble.sh
 
 ## 编译
 
-从 ROS 2 工作区根目录编译：
+从 ROS 2 工作区根目录编译。不要在源码包目录 `src/jie_3d_nav` 内直接执行 `colcon build`，否则会在源码目录下生成多余的 `build/`、`install/`、`log/`：
 
 ```bash
 cd ~/ros2_ws
@@ -80,10 +93,23 @@ colcon build --packages-select jie_map_msgs jie_octomap octo_planner
 source install/setup.bash
 ```
 
+如果 Open3D C++ 不在默认 CMake 搜索路径中：
+
+```bash
+colcon build --packages-select jie_map_msgs jie_octomap octo_planner \
+  --cmake-args -DOpen3D_DIR=/path/to/open3d_install/lib/cmake/Open3D
+```
+
 如果源码目录移动过，旧 CMake 缓存可能还指向旧路径，可以清理缓存后重编：
 
 ```bash
 colcon build --packages-select jie_map_msgs jie_octomap octo_planner --cmake-clean-cache
+```
+
+如果误在源码包目录内编译过，可以删除源码目录下被 `.gitignore` 忽略的临时产物：
+
+```bash
+rm -rf build install log
 ```
 
 ## 快速体验
@@ -121,6 +147,33 @@ ros2 launch jie_octomap import_pcd_map.launch.py
 - `map_package_manager`
 - `pcd_map_import_gui`
 - `octo_planner/jie_path_node`
+
+转换成功时，终端应看到类似日志：
+
+```text
+Loaded PCD file: ... source_points=... kept_voxels=... occupied_voxels=...
+Preprocess mask rebuilt...
+Preblocked costmap rebuilt...
+```
+
+如果 GUI 右侧没有显示转换后的 OctoMap，或保存地图包时提示 `not ready` / `octomap not ready`，优先检查终端中 `pcd_to_octomap_node` 是否已经退出。常见原因是 Open3D 依赖的运行库没有被动态链接器找到，例如：
+
+```text
+error while loading shared libraries: libtbb.so.12: cannot open shared object file
+```
+
+这时先确认依赖是否可见：
+
+```bash
+ldd install/jie_octomap/lib/jie_octomap/pcd_to_octomap_node | grep -E "not found|tbb"
+```
+
+如果 `libtbb.so.12` 未找到，把 Open3D 安装目录下的 `lib/` 加入 `LD_LIBRARY_PATH` 后重新启动 launch：
+
+```bash
+export LD_LIBRARY_PATH=/path/to/open3d_install/lib:${LD_LIBRARY_PATH}
+ros2 launch jie_octomap import_pcd_map.launch.py
+```
 
 ### 导入 ROS 2D 栅格地图
 

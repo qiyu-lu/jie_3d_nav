@@ -36,7 +36,7 @@ jie_3d_nav/
 ├── jie_map_msgs/        # Custom srv interfaces
 ├── jie_octomap/         # OctoMap import, management, editing, Web/GUI tools
 ├── octo_planner/        # 3D planner, controller, navigation launch files
-├── worlds/              # Example Gazebo worlds
+├── jie_octomap/worlds/  # Example Gazebo worlds
 └── install_deps_humble.sh
 ```
 
@@ -50,6 +50,19 @@ jie_3d_nav/
 - Open3D C++ development files
 - PyQt5, VTK, NumPy, Pillow, PyYAML
 - Optional: `rosbridge_server`, used by the Web page to access ROS through websocket
+
+### ROS 2 Foxy Reproduction Notes
+
+This project primarily targets Ubuntu 22.04 / ROS 2 Humble. Ubuntu 20.04 / ROS 2 Foxy can be used to validate the core pipeline, including Gazebo world or PCD map import into OctoMap and 3D path planning, with a few extra environment details:
+
+- Install the Foxy Python point cloud helper package: `sudo apt-get install ros-foxy-sensor-msgs-py`.
+- Ubuntu 20.04 commonly provides `python3-vtk7`, whose Qt entry point is `vtk.qt.QVTKRenderWindowInteractor`; newer VTK versions use `vtkmodules.qt.QVTKRenderWindowInteractor`.
+- If Open3D C++ is installed outside the system search paths, pass `Open3D_DIR` or `CMAKE_PREFIX_PATH` so CMake can find `Open3DConfig.cmake`.
+- If `pcd_to_octomap_node` fails with `libtbb.so.12: cannot open shared object file`, add the Open3D installation `lib/` directory to the runtime library path, for example:
+
+```bash
+export LD_LIBRARY_PATH=/path/to/open3d_install/lib:${LD_LIBRARY_PATH}
+```
 
 The base build does not require these two packages:
 
@@ -71,7 +84,7 @@ If CMake cannot find Open3D, install the Open3D C++ development files and make s
 
 ## Build
 
-Build from the ROS 2 workspace root:
+Build from the ROS 2 workspace root. Do not run `colcon build` directly inside the source package directory `src/jie_3d_nav`; doing so creates extra `build/`, `install/`, and `log/` directories in the source tree:
 
 ```bash
 cd ~/ros2_ws
@@ -80,10 +93,23 @@ colcon build --packages-select jie_map_msgs jie_octomap octo_planner
 source install/setup.bash
 ```
 
+If Open3D C++ is not in the default CMake search path:
+
+```bash
+colcon build --packages-select jie_map_msgs jie_octomap octo_planner \
+  --cmake-args -DOpen3D_DIR=/path/to/open3d_install/lib/cmake/Open3D
+```
+
 If the source directory has been moved, old CMake cache may still point to an old path. Clean the cache and rebuild:
 
 ```bash
 colcon build --packages-select jie_map_msgs jie_octomap octo_planner --cmake-clean-cache
+```
+
+If you accidentally built inside the source package directory, remove the ignored temporary outputs from that source directory:
+
+```bash
+rm -rf build install log
 ```
 
 ## Quick Start
@@ -121,6 +147,33 @@ This launch starts:
 - `map_package_manager`
 - `pcd_map_import_gui`
 - `octo_planner/jie_path_node`
+
+After a successful conversion, the terminal should show logs similar to:
+
+```text
+Loaded PCD file: ... source_points=... kept_voxels=... occupied_voxels=...
+Preprocess mask rebuilt...
+Preblocked costmap rebuilt...
+```
+
+If the GUI does not show the converted OctoMap on the right side, or saving the map package reports `not ready` / `octomap not ready`, first check whether `pcd_to_octomap_node` has exited. A common cause is that an Open3D runtime dependency is not visible to the dynamic linker, for example:
+
+```text
+error while loading shared libraries: libtbb.so.12: cannot open shared object file
+```
+
+Check the missing dependency with:
+
+```bash
+ldd install/jie_octomap/lib/jie_octomap/pcd_to_octomap_node | grep -E "not found|tbb"
+```
+
+If `libtbb.so.12` is not found, add the Open3D installation `lib/` directory to `LD_LIBRARY_PATH` and restart the launch:
+
+```bash
+export LD_LIBRARY_PATH=/path/to/open3d_install/lib:${LD_LIBRARY_PATH}
+ros2 launch jie_octomap import_pcd_map.launch.py
+```
 
 ### Import a ROS 2D Occupancy Grid Map
 
